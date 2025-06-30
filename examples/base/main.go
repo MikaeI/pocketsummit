@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"log"
 	"net/http"
 	"os"
@@ -103,6 +104,34 @@ func main() {
 	// GitHub selfupdate
 	ghupdate.MustRegister(app, app.RootCmd, ghupdate.Config{})
 
+	validate := func(r *core.Record) error {
+		var m map[string]map[string]float64
+		if err := r.UnmarshalJSONField("matrix", &m); err != nil {
+			return err
+		}
+		wantedItems := []string{"1-3", "4-6", "7-15", "15-25", "25-50", "50+"}
+		wantedMeasures := []string{
+			"40-64", "65-80", "81-100", "101-120",
+			"121-140", "141-160", "161-199", "200-240",
+		}
+		if !sameKeys(m, wantedItems) {
+			return errors.New("invalid item bands")
+		}
+		for _, i := range wantedItems {
+			if !sameKeys(m[i], wantedMeasures) {
+				return errors.New("invalid measure bands")
+			}
+		}
+		return nil
+	}
+
+	app.OnRecordCreate("prices").Bind(&hook.Handler[*core.RecordEvent]{
+		Func: func(e *core.RecordEvent) error { return validate(e.Record) },
+	})
+	app.OnRecordUpdate("prices").Bind(&hook.Handler[*core.RecordEvent]{
+		Func: func(e *core.RecordEvent) error { return validate(e.Record) },
+	})
+
 	// static route to serves files from the provided public dir
 	// (if publicDir exists and the route path is not already defined)
 	app.OnServe().Bind(&hook.Handler[*core.ServeEvent]{
@@ -129,4 +158,16 @@ func defaultPublicDir() string {
 	}
 
 	return filepath.Join(os.Args[0], "../pb_public")
+}
+
+func sameKeys[K comparable, V any](m map[K]V, keys []K) bool {
+	if len(m) != len(keys) {
+		return false
+	}
+	for _, k := range keys {
+		if _, ok := m[k]; !ok {
+			return false
+		}
+	}
+	return true
 }

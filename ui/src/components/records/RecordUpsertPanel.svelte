@@ -17,6 +17,7 @@
     import EmailField from "@/components/records/fields/EmailField.svelte";
     import FileField from "@/components/records/fields/FileField.svelte";
     import JsonField from "@/components/records/fields/JsonField.svelte";
+    import MatrixEditor from "@/components/records/fields/MatrixEditor.svelte";
     import NumberField from "@/components/records/fields/NumberField.svelte";
     import PasswordField from "@/components/records/fields/PasswordField.svelte";
     import RelationField from "@/components/records/fields/RelationField.svelte";
@@ -716,6 +717,11 @@
                     <DateField {field} {original} {record} bind:value={record[field.name]} />
                 {:else if field.type === "select"}
                     <SelectField {field} {original} {record} bind:value={record[field.name]} />
+                {:else if field.type === "json" && (field.options?.ui === "matrix" || collection?.name === "prices")}
+                    <MatrixEditor
+                        bind:value={record[field.name]}
+                        onChange={(v) => (record[field.name] = v)}
+                    />
                 {:else if field.type === "json"}
                     <JsonField {field} {original} {record} bind:value={record[field.name]} />
                 {:else if field.type === "file"}
