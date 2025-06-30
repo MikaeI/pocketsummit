@@ -3,8 +3,49 @@
   export let readonly = false;
   export let onChange: (v: Record<string,Record<string,number>>) => void;
 
-  const itemBands = Object.keys(value ?? {});
-  const measureBands = Object.keys(value?.[itemBands[0]] ?? {});
+  import { onMount } from "svelte";
+
+  const defaultItems = [
+    "1-3",
+    "4-6",
+    "7-15",
+    "15-25",
+    "25-50",
+    "50+",
+  ];
+  const defaultMeasures = [
+    "40-64",
+    "65-80",
+    "81-100",
+    "101-120",
+    "121-140",
+    "141-160",
+    "161-199",
+    "200-240",
+  ];
+
+  // ensure the matrix always has some data to render
+  onMount(() => {
+    if (!value || Object.keys(value).length === 0) {
+      const next: Record<string, Record<string, number>> = {};
+      for (const i of defaultItems) {
+        next[i] = {};
+        for (const m of defaultMeasures) {
+          next[i][m] = 0;
+        }
+      }
+      onChange(next);
+    }
+  });
+
+  let itemBands: string[] = [];
+  let measureBands: string[] = [];
+
+  $: itemBands = Object.keys(value ?? {});
+  $: if (itemBands.length === 0) itemBands = [...defaultItems];
+
+  $: measureBands = Object.keys(value?.[itemBands[0]] ?? {});
+  $: if (measureBands.length === 0) measureBands = [...defaultMeasures];
 
   function setPrice(iBand: string, mBand: string, ev: Event) {
     const input = ev.target as HTMLInputElement;
